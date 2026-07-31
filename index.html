@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Drift — Pushup Momentum</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Drift">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A1220;
+    --bg-2: #0D1626;
+    --surface: #101B2D;
+    --surface-2: #14213A;
+    --border: #1E2E4A;
+    --text: #E8EEF7;
+    --text-dim: #8DA0BC;
+    --text-faint: #5A6E8C;
+    --ice: #6EE7F0;
+    --ice-dim: #2B4A52;
+    --aurora: #8B7CF6;
+    --coral: #FF8A65;
+    --gold: #F2C94C;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(110,231,240,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(139,124,246,0.08), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height:100%;
+    padding-bottom: 48px;
+  }
+  .wrap{ max-width: 720px; margin: 0 auto; padding: 20px 18px 0; }
+  header.top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom: 22px; padding-top: 6px;}
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{ width:30px; height:30px; flex:0 0 auto; }
+  .brand h1{ font-family:'Oswald', sans-serif; font-weight:600; letter-spacing:0.5px; font-size:22px; margin:0; }
+  .brand .sub{ font-size:11px; color:var(--text-faint); letter-spacing:1.5px; text-transform:uppercase; margin-top:1px;}
+  .date-chip{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--text-dim); border:1px solid var(--border); padding:6px 10px; border-radius:20px; background:var(--surface); }
+
+  .card{ background: linear-gradient(180deg, var(--surface), var(--bg-2)); border:1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; position:relative; overflow:hidden; }
+  .card-label{ font-size:11px; letter-spacing:1.6px; text-transform:uppercase; color:var(--text-faint); font-weight:600; margin-bottom:4px; }
+
+  /* Log entry */
+  .log-row{ display:flex; gap:8px; align-items:center; }
+  .log-row input[type=date]{ flex: 0 0 148px; }
+  .log-row input[type=number]{ flex: 1 1 auto; }
+  .quick-btns{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .qbtn{ background:var(--surface-2); border:1px solid var(--border); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; padding:9px 14px; border-radius:10px; cursor:pointer; transition: all .15s ease; }
+  .qbtn:hover{ border-color: var(--ice); color:var(--ice); transform: translateY(-1px); }
+  .qbtn:active{ transform: translateY(0); }
+  input[type=number], input[type=text], input[type=date], input[type=time]{
+    background: var(--bg-2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; font-family:'JetBrains Mono', monospace; font-size:15px; width:100%;
+    color-scheme: dark;
+  }
+  input:focus{ outline:none; border-color: var(--ice); }
+  .btn-primary{ background: linear-gradient(135deg, var(--ice), #45C7D6); color:#04222A; border:none; font-weight:700; padding:10px 18px; border-radius:10px; cursor:pointer; font-family:'Inter',sans-serif; font-size:14px; white-space:nowrap; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-primary:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn-ghost{ background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:8px 14px; border-radius:10px; cursor:pointer; font-size:13px; font-family:'Inter',sans-serif;}
+  .btn-ghost:hover{ border-color:var(--text-dim); color:var(--text); }
+  .btn-icon{ background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:15px; padding:2px 7px; border-radius:6px; }
+  .btn-icon:hover{ color:var(--ice); background:var(--surface-2); }
+  .btn-icon.danger:hover{ color:var(--coral); }
+
+  .today-status{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; color:var(--text-dim); }
+  .dot{ width:8px; height:8px; border-radius:50%; background: var(--text-faint); }
+  .dot.done{ background: var(--ice); box-shadow: 0 0 8px var(--ice); }
+  .backdate-flag{ font-size:11px; color:var(--gold); margin-top:8px; display:none; }
+  .backdate-flag.show{ display:block; }
+
+  /* Momentum */
+  .momentum-head{ display:flex; justify-content:space-between; align-items:flex-end; }
+  .momentum-value{ font-family:'Oswald', sans-serif; font-size:52px; font-weight:600; line-height:1; letter-spacing: -1px; }
+  .momentum-value.neg{ color: var(--coral); }
+  .momentum-value.pos{ color: var(--ice); }
+  .momentum-meta{ text-align:right; font-size:12px; color:var(--text-dim); line-height:1.5;}
+  .momentum-meta b{ color:var(--text); }
+  .chart-wrap{ margin-top:10px; }
+  .range-toggle{ display:flex; gap:6px; margin-top:12px; }
+  .range-btn{ font-size:11px; padding:5px 10px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text-faint); cursor:pointer; font-family:'JetBrains Mono', monospace;}
+  .range-btn.active{ color:var(--ice); border-color:var(--ice); }
+
+  /* Heatmap */
+  .heatmap-scroll{ overflow-x:auto; padding-bottom:4px; }
+  .heatmap-scroll::-webkit-scrollbar{ height:6px; }
+  .heat-legend{ display:flex; align-items:center; gap:6px; justify-content:flex-end; margin-top:8px; font-size:10px; color:var(--text-faint); }
+  .heat-legend .sw{ width:10px; height:10px; border-radius:2px; display:inline-block; }
+
+  /* Schedule */
+  .schedule-row{ display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin-top:4px;}
+  .radio-opt{ display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-dim); cursor:pointer; }
+  .radio-opt input[type=radio]{ accent-color: var(--ice); width:15px; height:15px; }
+  .freq-inline{ display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-dim); }
+  .freq-inline input[type=number]{ width:56px; padding:6px 8px; }
+  .schedule-note{ font-size:12px; color:var(--text-faint); margin-top:10px; line-height:1.5; }
+
+  /* Goals */
+  .goal-row{ margin-bottom:14px; }
+  .goal-row:last-child{ margin-bottom:0; }
+  .goal-top{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+  .goal-top .name{ color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-size:11px; font-weight:600; }
+  .goal-top .nums{ font-family:'JetBrains Mono', monospace; color:var(--text); }
+  .bar-track{ height:8px; background:var(--bg-2); border-radius:5px; overflow:hidden; border:1px solid var(--border);}
+  .bar-fill{ height:100%; border-radius:5px; background: linear-gradient(90deg, var(--ice), var(--aurora)); transition: width .4s ease; }
+  .bar-fill.gold{ background: linear-gradient(90deg, var(--gold), #F2994A); }
+  .goal-edit{ display:flex; gap:8px; margin-top:14px; }
+  .goal-edit input{ flex:1; }
+
+  /* Stats grid */
+  .stat-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+  .stat-cell{ background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 10px; text-align:center; }
+  .stat-cell .n{ font-family:'Oswald', sans-serif; font-size:22px; font-weight:600; color:var(--text); }
+  .stat-cell .l{ font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px; margin-top:3px;}
+  .stat-cell.record{ border-color: rgba(242,201,76,0.35); }
+  .stat-cell.record .n{ color: var(--gold); }
+  .records-grid{ grid-template-columns: repeat(2, 1fr); margin-top:10px; }
+
+  .section-title{ font-family:'Oswald', sans-serif; font-size:15px; letter-spacing:0.5px; margin: 26px 0 10px 2px; color:var(--text); display:flex; align-items:center; gap:8px;}
+  .section-title .line{ flex:1; height:1px; background:var(--border); }
+
+  /* history */
+  .entry{ display:flex; justify-content:space-between; align-items:center; padding:10px 4px; border-bottom:1px solid var(--border); font-size:14px; gap:8px; }
+  .entry:last-child{ border-bottom:none; }
+  .entry .d{ color:var(--text-dim); font-family:'JetBrains Mono', monospace; font-size:12px; }
+  .entry .r{ font-weight:600; flex:1; text-align:right; }
+  .entry .actions{ display:flex; gap:2px; }
+  .entry.editing{ gap:6px; }
+  .entry.editing input[type=date]{ flex:0 0 128px; padding:7px 8px; font-size:13px; }
+  .entry.editing input[type=number]{ flex:0 0 72px; padding:7px 8px; font-size:13px; }
+  .empty{ color:var(--text-faint); font-size:13px; padding:14px 4px; text-align:center; }
+
+  .footer-actions{ display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; }
+  .reminder-row{ display:flex; align-items:center; gap:14px; margin-top:14px; flex-wrap:wrap; }
+  .toggle-label{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); cursor:pointer; }
+  .toggle-label input[type=checkbox]{ accent-color: var(--ice); width:16px; height:16px; }
+  .reminder-row input[type=time]{ width:auto; flex:0 0 auto; }
+  .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface-2); border:1px solid var(--ice); color:var(--text); padding:10px 18px; border-radius:10px; font-size:13px; opacity:0; transition: all .3s ease; pointer-events:none; z-index:50;}
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  details.settings summary{ cursor:pointer; color:var(--text-dim); font-size:13px; list-style:none; display:flex; align-items:center; gap:6px; }
+  details.settings summary::-webkit-details-marker{ display:none; }
+  details.settings summary:before{ content:'⚙'; }
+  details.settings[open] summary{ margin-bottom:12px; }
+  .backup-note{ font-size:12px; color:var(--text-faint); line-height:1.6; margin-top:10px; }
+  input[type=file]{ color:var(--text-dim); font-size:12px; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+
+  @media (max-width:420px){
+    .stat-grid{ grid-template-columns: repeat(2,1fr); }
+    .records-grid{ grid-template-columns: repeat(2,1fr); }
+    .momentum-value{ font-size:42px; }
+    .log-row{ flex-wrap:wrap; }
+    .log-row input[type=date]{ flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2C10 8 6 13 6 19a10 10 0 0020 0c0-6-4-11-10-17z" fill="url(#g)" opacity="0.9"/>
+        <defs><linearGradient id="g" x1="6" y1="2" x2="26" y2="30"><stop stop-color="#6EE7F0"/><stop offset="1" stop-color="#8B7CF6"/></linearGradient></defs>
+      </svg>
+      <div>
+        <h1>Drift</h1>
+        <div class="sub">Pushup Momentum</div>
+      </div>
+    </div>
+    <div class="date-chip" id="todayChip">—</div>
+  </header>
+
+  <!-- LOG -->
+  <div class="card">
+    <div class="card-label">Log a day</div>
+    <div class="log-row">
+      <input type="date" id="entryDate" />
+      <input type="number" id="repsInput" placeholder="Reps" min="0" inputmode="numeric" />
+      <button class="btn-primary" id="addBtn">Add</button>
+    </div>
+    <div class="quick-btns">
+      <button class="qbtn" data-q="10">+10</button>
+      <button class="qbtn" data-q="20">+20</button>
+      <button class="qbtn" data-q="25">+25</button>
+      <button class="qbtn" data-q="50">+50</button>
+    </div>
+    <div class="backdate-flag" id="backdateFlag">Logging to a past date — momentum and stats will recalculate</div>
+    <div class="today-status">
+      <span class="dot" id="todayDot"></span>
+      <span id="todayStatusText">No reps logged yet today</span>
+    </div>
+  </div>
+
+  <!-- MOMENTUM -->
+  <div class="card">
+    <div class="card-label">Momentum</div>
+    <div class="momentum-head">
+      <div class="momentum-value" id="momentumVal">0</div>
+      <div class="momentum-meta" id="momentumMeta">Start logging to build momentum</div>
+    </div>
+    <div class="chart-wrap" id="chartWrap"></div>
+    <div class="range-toggle" id="rangeToggle">
+      <button class="range-btn active" data-r="30">30D</button>
+      <button class="range-btn" data-r="90">90D</button>
+      <button class="range-btn" data-r="365">1Y</button>
+    </div>
+  </div>
+
+  <!-- YEAR GRID -->
+  <div class="card">
+    <div class="card-label">Last 52 weeks</div>
+    <div class="heatmap-scroll"><div id="yearGrid"></div></div>
+    <div class="heat-legend" id="heatLegend"></div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="card">
+    <div class="card-label">Schedule</div>
+    <div class="schedule-row">
+      <label class="radio-opt"><input type="radio" name="mode" value="daily" id="modeDaily"> Daily</label>
+      <label class="radio-opt">
+        <input type="radio" name="mode" value="weekly" id="modeWeekly">
+        <span class="freq-inline">
+          <input type="number" id="freqInput" min="1" max="7" />
+          times / week
+        </span>
+      </label>
+    </div>
+    <div class="schedule-note" id="scheduleNote"></div>
+  </div>
+
+  <!-- GOALS -->
+  <div class="card">
+    <div class="card-label">Goals</div>
+    <div class="goal-row">
+      <div class="goal-top"><span class="name">This month</span><span class="nums" id="monthGoalNums">0 / 0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="monthGoalBar" style="width:0%"></div></div>
+    </div>
+    <div class="goal-row">
+      <div class="goal-top"><span class="name">This year</span><span class="nums" id="yearGoalNums">0 / 0</span></div>
+      <div class="bar-track"><div class="bar-fill gold" id="yearGoalBar" style="width:0%"></div></div>
+    </div>
+    <div class="goal-edit">
+      <input type="number" id="monthGoalInput" placeholder="Monthly goal (reps)" min="0" />
+      <input type="number" id="yearGoalInput" placeholder="Yearly goal (reps)" min="0" />
+      <button class="btn-ghost" id="saveGoalsBtn">Save</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="section-title"><span>Totals</span><span class="line"></span></div>
+  <div class="card">
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="n" id="statDay">0</div><div class="l">Today</div></div>
+      <div class="stat-cell"><div class="n" id="statWeek">0</div><div class="l">This week</div></div>
+      <div class="stat-cell"><div class="n" id="statMonth">0</div><div class="l">This month</div></div>
+      <div class="stat-cell"><div class="n" id="statYear">0</div><div class="l">This year</div></div>
+    </div>
+    <div class="stat-grid records-grid">
+      <div class="stat-cell record"><div class="n" id="recordDay">0</div><div class="l">Best day</div></div>
+      <div class="stat-cell record"><div class="n" id="recordWeek">0</div><div class="l">Best week</div></div>
+    </div>
+  </div>
+
+  <div class="section-title"><span>Last 8 weeks</span><span class="line"></span></div>
+  <div class="card"><div id="weekChart"></div></div>
+
+  <div class="section-title"><span>Last 12 months</span><span class="line"></span></div>
+  <div class="card"><div id="monthChart"></div></div>
+
+  <!-- HISTORY -->
+  <div class="section-title"><span>Recent entries</span><span class="line"></span></div>
+  <div class="card" id="historyCard">
+    <div class="empty">Nothing logged yet</div>
+  </div>
+
+  <!-- SETTINGS / BACKUP -->
+  <details class="settings">
+    <summary>Backup, data &amp; reminders</summary>
+    <div class="card">
+      <div class="footer-actions">
+        <button class="btn-ghost" id="exportBtn">Export JSON</button>
+        <button class="btn-ghost" id="exportCsvBtn">Export CSV</button>
+        <label class="btn-ghost" style="cursor:pointer;">
+          Import backup
+          <input type="file" id="importFile" accept="application/json" style="display:none;" />
+        </label>
+      </div>
+      <div class="backup-note">
+        Your data auto-saves as you go — nothing to set up. Use <b>Export</b> whenever you want a snapshot; drop the file into Google Drive (or anywhere) as a manual backup. <b>Import</b> restores from a JSON snapshot and replaces what's currently stored here.
+      </div>
+      <div class="reminder-row">
+        <label class="toggle-label"><input type="checkbox" id="reminderToggle" /> Evening reminder</label>
+        <input type="time" id="reminderTime" value="19:00" />
+      </div>
+      <div class="backup-note">Reminder only fires while this app is open in a tab on this device — it can't wake up in the background without a hosted push server.</div>
+    </div>
+  </details>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'drift-pushup-data-v1';
+  const $ = (id) => document.getElementById(id);
+
+  const DEFAULT_DATA = () => ({
+    entries: [],
+    goals: { monthly: 3000, yearly: 30000 },
+    settings: { mode: 'daily', frequency: 5, reminder: { enabled: false, time: '19:00' } },
+    lastNotified: null
+  });
+  let data = DEFAULT_DATA();
+  let editingId = null;
+
+  // ---------- date helpers ----------
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+  function toISO(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function todayISO(){ return toISO(new Date()); }
+  function parseISO(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+  function addDays(d, n){ const c = new Date(d); c.setDate(c.getDate()+n); return c; }
+  function startOfWeek(d){ const c = new Date(d); const day = (c.getDay()+6)%7; c.setDate(c.getDate()-day); c.setHours(0,0,0,0); return c; }
+  function monthKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1); }
+  function fmtShort(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}); }
+
+  // ---------- storage: uses Claude's artifact storage when present, otherwise localStorage ----------
+  async function load(){
+    let parsed = null;
+    if(window.storage){
+      try{
+        const res = await window.storage.get(STORAGE_KEY, false);
+        if(res && res.value) parsed = JSON.parse(res.value);
+      }catch(e){ /* no existing data yet */ }
+    }
+    if(!parsed){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw) parsed = JSON.parse(raw);
+      }catch(e){ /* storage unavailable */ }
+    }
+    if(parsed){
+      const def = DEFAULT_DATA();
+      data = {
+        entries: parsed.entries || [],
+        goals: Object.assign(def.goals, parsed.goals || {}),
+        settings: Object.assign(def.settings, parsed.settings || {}, {
+          reminder: Object.assign(def.settings.reminder, (parsed.settings && parsed.settings.reminder) || {})
+        }),
+        lastNotified: parsed.lastNotified || null
+      };
+    }
+  }
+  async function save(){
+    const json = JSON.stringify(data);
+    let ok = false;
+    if(window.storage){
+      try{ await window.storage.set(STORAGE_KEY, json, false); ok = true; }catch(e){}
+    }
+    try{ localStorage.setItem(STORAGE_KEY, json); ok = true; }catch(e){}
+    if(!ok) showToast('Save failed — try again');
+  }
+
+  function showToast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+
+  // ---------- entries ----------
+  function addEntry(reps, dateISO){
+    if(!reps || reps <= 0) return;
+    data.entries.push({ id: Date.now()+'-'+Math.random().toString(36).slice(2,7), date: dateISO || todayISO(), reps: Math.round(reps), ts: Date.now() });
+    data.entries.sort((a,b)=> a.date.localeCompare(b.date) || a.ts-b.ts);
+    save();
+    renderAll();
+    showToast('+' + Math.round(reps) + ' logged to ' + (dateISO || todayISO()));
+  }
+  function deleteEntry(id){
+    data.entries = data.entries.filter(e => e.id !== id);
+    save();
+    renderAll();
+  }
+  function updateEntry(id, newDate, newReps){
+    const e = data.entries.find(x => x.id === id);
+    if(!e) return;
+    e.date = newDate;
+    e.reps = Math.max(0, Math.round(newReps));
+    data.entries.sort((a,b)=> a.date.localeCompare(b.date) || a.ts-b.ts);
+    editingId = null;
+    save();
+    renderAll();
+    showToast('Entry updated');
+  }
+
+  function repsByDate(){
+    const map = {};
+    for(const e of data.entries){ map[e.date] = (map[e.date]||0) + e.reps; }
+    return map;
+  }
+
+  // ---------- momentum engine (Polar Habits algorithm) ----------
+  function computeMomentumDaily(byDate){
+    const doneDates = Object.keys(byDate).filter(d => byDate[d] > 0).sort();
+    const series = [];
+    if(doneDates.length === 0) return { series, current: 0, missLen: 0, consecutiveDone: 0, mode: 'daily' };
+
+    const start = parseISO(doneDates[0]);
+    const end = parseISO(todayISO());
+    let momentum = 0, streakVal = 0, missAccum = 0, missLen = 0, consecutiveDone = 0;
+
+    for(let d = new Date(start); d <= end; d = addDays(d,1)){
+      const iso = toISO(d);
+      const done = !!byDate[iso] && byDate[iso] > 0;
+      if(done){
+        if(missLen > 0){
+          streakVal = streakVal - missAccum + 1;
+          momentum += streakVal;
+          missLen = 0; missAccum = 0;
+          consecutiveDone = 1;
+        } else if(streakVal === 0){
+          streakVal = 1; momentum += 1; consecutiveDone = 1;
+        } else {
+          streakVal += 1; momentum += streakVal; consecutiveDone += 1;
+        }
+      } else {
+        missLen += 1;
+        missAccum += missLen;
+        momentum -= missLen;
+        consecutiveDone = 0;
+      }
+      series.push({ date: iso, momentum });
+    }
+    return { series, current: momentum, missLen, consecutiveDone, mode: 'daily' };
+  }
+
+  // Adapted weekly-frequency version of the same gain/loss/bounce-back logic,
+  // evaluated per week instead of per day (per Polar Habits' non-daily habit model).
+  function computeMomentumWeekly(byDate, frequency){
+    const doneDates = Object.keys(byDate).filter(d => byDate[d] > 0).sort();
+    const series = [];
+    if(doneDates.length === 0) return { series, current: 0, weekHits: 0, weekTarget: frequency, missDeficit: 0, mode: 'weekly' };
+
+    const firstWeekStart = startOfWeek(parseISO(doneDates[0]));
+    const today = new Date(); today.setHours(0,0,0,0);
+    const curWeekStart = startOfWeek(today);
+    let momentum = 0, streakVal = 0, missAccum = 0, missLen = 0;
+    let weekHits = 0;
+
+    for(let ws = new Date(firstWeekStart); ws <= curWeekStart; ws = addDays(ws,7)){
+      const we = addDays(ws,6);
+      const isCurrentWeek = ws.getTime() === curWeekStart.getTime();
+      let hits = 0;
+      const hitDays = [];
+      for(let d = new Date(ws); d <= we && d <= today; d = addDays(d,1)){
+        const iso = toISO(d);
+        if(byDate[iso] > 0){ hits++; hitDays.push(iso); }
+      }
+      for(const iso of hitDays){
+        if(missLen > 0){
+          streakVal = streakVal - missAccum + 1;
+          momentum += streakVal;
+          missLen = 0; missAccum = 0;
+        } else if(streakVal === 0){
+          streakVal = 1; momentum += 1;
+        } else {
+          streakVal += 1; momentum += streakVal;
+        }
+      }
+      weekHits = hits;
+      const weekComplete = we < today || (!isCurrentWeek);
+      if(weekComplete){
+        if(hits < frequency){
+          const missedCount = frequency - hits;
+          for(let k=0;k<missedCount;k++){
+            missLen += 1;
+            const loss = missLen;
+            missAccum += loss;
+            momentum -= loss;
+          }
+        } else {
+          missLen = 0; missAccum = 0;
+        }
+      }
+      series.push({ date: toISO(we < today ? we : today), momentum });
+    }
+    return { series, current: momentum, weekHits, weekTarget: frequency, missDeficit: missLen, mode: 'weekly' };
+  }
+
+  function computeMomentum(byDate){
+    if(data.settings.mode === 'weekly'){
+      return computeMomentumWeekly(byDate, Math.max(1, Math.min(7, data.settings.frequency || 5)));
+    }
+    return computeMomentumDaily(byDate);
+  }
+
+  // ---------- personal records ----------
+  function computeRecords(byDate){
+    let bestDay = 0, bestDayDate = null;
+    for(const iso in byDate){
+      if(byDate[iso] > bestDay){ bestDay = byDate[iso]; bestDayDate = iso; }
+    }
+    const weekStarts = new Set();
+    for(const iso in byDate){ weekStarts.add(toISO(startOfWeek(parseISO(iso)))); }
+    let bestWeek = 0, bestWeekStart = null;
+    weekStarts.forEach((wsIso) => {
+      const ws = parseISO(wsIso);
+      let tot = 0;
+      for(let d = new Date(ws); d < addDays(ws,7); d = addDays(d,1)) tot += byDate[toISO(d)] || 0;
+      if(tot > bestWeek){ bestWeek = tot; bestWeekStart = wsIso; }
+    });
+    return { bestDay, bestDayDate, bestWeek, bestWeekStart };
+  }
+
+  // ---------- SVG line chart ----------
+  function renderLineChart(container, series, points){
+    const W = 660, H = 150, PAD = 8;
+    const slice = series.slice(-points);
+    if(slice.length < 2){
+      container.innerHTML = '<div class="empty">Log a few entries to see your momentum curve</div>';
+      return;
+    }
+    const vals = slice.map(p => p.momentum);
+    const min = Math.min(0, ...vals), max = Math.max(1, ...vals);
+    const range = (max - min) || 1;
+    const stepX = (W - PAD*2) / (slice.length - 1);
+    const y = (v) => H - PAD - ((v - min)/range) * (H - PAD*2);
+    const x = (i) => PAD + i*stepX;
+
+    let path = '';
+    slice.forEach((p,i) => { path += (i===0?'M':'L') + x(i).toFixed(1) + ',' + y(p.momentum).toFixed(1) + ' '; });
+    const zeroY = y(0).toFixed(1);
+    const areaPath = path + `L${x(slice.length-1).toFixed(1)},${H-PAD} L${x(0).toFixed(1)},${H-PAD} Z`;
+    const last = slice[slice.length-1];
+    const lastColor = last.momentum >= 0 ? 'var(--ice)' : 'var(--coral)';
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="overflow:visible;">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6EE7F0" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#6EE7F0" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#8B7CF6"/>
+            <stop offset="100%" stop-color="#6EE7F0"/>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="${zeroY}" x2="${W}" y2="${zeroY}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,4"/>
+        <path d="${areaPath}" fill="url(#areaGrad)" />
+        <path d="${path}" fill="none" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${x(slice.length-1)}" cy="${y(last.momentum)}" r="4" fill="${lastColor}" />
+      </svg>`;
+  }
+
+  // ---------- SVG bar chart ----------
+  function renderBarChart(container, labels, values, goalLine){
+    const W = 660, H = 140, PAD = 6, gap = 6;
+    const n = values.length;
+    const barW = (W - PAD*2 - gap*(n-1)) / n;
+    const max = Math.max(1, ...values, goalLine || 0);
+    const y = (v) => H - 22 - (v/max)*(H-40);
+    let bars = '';
+    values.forEach((v,i) => {
+      const bx = PAD + i*(barW+gap);
+      const by = y(v);
+      const h = (H-22) - by;
+      const color = goalLine && v >= goalLine ? 'var(--gold)' : 'url(#barGrad)';
+      bars += `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(h,1).toFixed(1)}" rx="3" fill="${color}"/>`;
+      bars += `<text x="${(bx+barW/2).toFixed(1)}" y="${H-6}" font-size="9" fill="var(--text-faint)" text-anchor="middle" font-family="JetBrains Mono, monospace">${labels[i]}</text>`;
+    });
+    const goalY = goalLine ? y(goalLine) : null;
+    container.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+        <defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6EE7F0"/><stop offset="100%" stop-color="#3B5A66"/>
+        </linearGradient></defs>
+        ${goalY!==null ? `<line x1="0" y1="${goalY.toFixed(1)}" x2="${W}" y2="${goalY.toFixed(1)}" stroke="var(--gold)" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="4,3"/>` : ''}
+        ${bars}
+      </svg>`;
+  }
+
+  // ---------- color interpolation for heatmap ----------
+  function hexToRgb(hex){
+    const h = hex.replace('#','');
+    return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  }
+  function lerpColor(c1, c2, t){
+    const a = hexToRgb(c1), b = hexToRgb(c2);
+    const r = Math.round(a[0] + (b[0]-a[0])*t);
+    const g = Math.round(a[1] + (b[1]-a[1])*t);
+    const bl = Math.round(a[2] + (b[2]-a[2])*t);
+    return `rgb(${r},${g},${bl})`;
+  }
+  const EMPTY_CELL = '#132038';
+  const LOW_COLOR = '#1B4650';
+  const HIGH_COLOR = '#6EE7F0';
+
+  // ---------- SVG year grid (52 weeks x 7 days) ----------
+  function renderYearGrid(container, legendEl, byDate){
+    const CELL = 11, GAP = 3, RX = 3;
+    const cols = 52, rows = 7;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const curWeekStart = startOfWeek(today);
+    const gridStart = addDays(curWeekStart, -7*(cols-1));
+
+    let max = 0;
+    for(const k in byDate){ if(byDate[k] > max) max = byDate[k]; }
+    if(max <= 0) max = 1;
+
+    const W = cols*(CELL+GAP) - GAP;
+    const H = rows*(CELL+GAP) - GAP + 14;
+    let cells = '';
+    let labels = '';
+    let lastMonth = -1;
+
+    for(let w=0; w<cols; w++){
+      const weekStartDate = addDays(gridStart, w*7);
+      const monthOfWeek = weekStartDate.getMonth();
+      if(monthOfWeek !== lastMonth){
+        labels += `<text x="${w*(CELL+GAP)}" y="9" font-size="9" fill="var(--text-faint)" font-family="JetBrains Mono, monospace">${weekStartDate.toLocaleDateString(undefined,{month:'short'})}</text>`;
+        lastMonth = monthOfWeek;
+      }
+      for(let d=0; d<rows; d++){
+        const date = addDays(weekStartDate, d);
+        const iso = toISO(date);
+        const isFuture = date > today;
+        const reps = byDate[iso] || 0;
+        const x = w*(CELL+GAP);
+        const y = 14 + d*(CELL+GAP);
+        let fill;
+        if(isFuture){ fill = 'transparent'; }
+        else if(reps <= 0){ fill = EMPTY_CELL; }
+        else { fill = lerpColor(LOW_COLOR, HIGH_COLOR, Math.min(1, reps/max)); }
+        const stroke = isFuture ? 'var(--border)' : 'none';
+        const title = isFuture ? '' : `<title>${iso} — ${reps} rep${reps===1?'':'s'}</title>`;
+        cells += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="${RX}" fill="${fill}" stroke="${stroke}" stroke-width="1" stroke-dasharray="2,2">${title}</rect>`;
+      }
+    }
+
+    container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="min-width:${W}px;">${labels}${cells}</svg>`;
+    legendEl.innerHTML = `
+      <span>Less</span>
+      <span class="sw" style="background:${EMPTY_CELL}"></span>
+      <span class="sw" style="background:${lerpColor(LOW_COLOR,HIGH_COLOR,0.25)}"></span>
+      <span class="sw" style="background:${lerpColor(LOW_COLOR,HIGH_COLOR,0.5)}"></span>
+      <span class="sw" style="background:${lerpColor(LOW_COLOR,HIGH_COLOR,0.75)}"></span>
+      <span class="sw" style="background:${HIGH_COLOR}"></span>
+      <span>More</span>`;
+  }
+
+  // ---------- render ----------
+  let currentRange = 30;
+
+  function renderAll(){
+    const now = new Date();
+    $('todayChip').textContent = now.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'});
+
+    const byDate = repsByDate();
+    const todayReps = byDate[todayISO()] || 0;
+    $('todayDot').classList.toggle('done', todayReps > 0);
+    $('todayStatusText').textContent = todayReps > 0 ? `${todayReps} reps logged today` : 'No reps logged yet today';
+
+    // momentum
+    const m = computeMomentum(byDate);
+    const mv = $('momentumVal');
+    mv.textContent = m.current;
+    mv.className = 'momentum-value ' + (m.current >= 0 ? 'pos' : 'neg');
+    if(m.mode === 'weekly'){
+      $('momentumMeta').innerHTML = m.series.length
+        ? (m.missDeficit > 0
+            ? `<b>${m.weekHits}/${m.weekTarget}</b> this week<br/>behind — hit your next few to bounce back`
+            : `<b>${m.weekHits}/${m.weekTarget}</b> this week<br/>on pace`)
+        : 'Start logging to build momentum';
+      const weekPoints = Math.max(4, Math.round(currentRange/7));
+      renderLineChart($('chartWrap'), m.series, weekPoints);
+    } else {
+      $('momentumMeta').innerHTML = m.series.length
+        ? (m.missLen > 0
+            ? `<b>${m.missLen}</b> day${m.missLen>1?'s':''} missed<br/>bounce back today to recover`
+            : `<b>${m.consecutiveDone}</b> day streak<br/>keep it rolling`)
+        : 'Start logging to build momentum';
+      renderLineChart($('chartWrap'), m.series, currentRange);
+    }
+
+    // year grid
+    renderYearGrid($('yearGrid'), $('heatLegend'), byDate);
+
+    // schedule note
+    $('scheduleNote').textContent = data.settings.mode === 'weekly'
+      ? `Momentum is scored per week — hit ${data.settings.frequency} day${data.settings.frequency>1?'s':''} to stay on pace, extra days still earn points.`
+      : 'Momentum is scored per day — any day with reps counts as a hit.';
+
+    // goals
+    const monthTotal = sumRange(byDate, monthKey(now), monthKey);
+    const yearTotal = sumRange(byDate, ''+now.getFullYear(), (d)=>''+d.getFullYear());
+    $('monthGoalNums').textContent = `${monthTotal} / ${data.goals.monthly}`;
+    $('yearGoalNums').textContent = `${yearTotal} / ${data.goals.yearly}`;
+    $('monthGoalBar').style.width = pct(monthTotal, data.goals.monthly) + '%';
+    $('yearGoalBar').style.width = pct(yearTotal, data.goals.yearly) + '%';
+    $('monthGoalInput').placeholder = 'Monthly goal: ' + data.goals.monthly;
+    $('yearGoalInput').placeholder = 'Yearly goal: ' + data.goals.yearly;
+
+    // stat grid
+    $('statDay').textContent = todayReps;
+    const weekStart = startOfWeek(now);
+    let weekTotal = 0;
+    for(let d = new Date(weekStart); d <= now; d = addDays(d,1)) weekTotal += byDate[toISO(d)] || 0;
+    $('statWeek').textContent = weekTotal;
+    $('statMonth').textContent = monthTotal;
+    $('statYear').textContent = yearTotal;
+
+    // personal records
+    const rec = computeRecords(byDate);
+    $('recordDay').textContent = rec.bestDay;
+    $('recordWeek').textContent = rec.bestWeek;
+
+    // weekly bar chart — last 8 weeks
+    const weekLabels = [], weekVals = [];
+    for(let i=7;i>=0;i--){
+      const ws = addDays(startOfWeek(now), -7*i);
+      let tot = 0;
+      for(let d=new Date(ws); d<addDays(ws,7); d=addDays(d,1)) tot += byDate[toISO(d)] || 0;
+      weekLabels.push(fmtShort(ws)); weekVals.push(tot);
+    }
+    renderBarChart($('weekChart'), weekLabels, weekVals, null);
+
+    // monthly bar chart — last 12 months
+    const monLabels = [], monVals = [];
+    for(let i=11;i>=0;i--){
+      const md = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const key = monthKey(md);
+      let tot = 0;
+      for(const iso in byDate){ if(iso.slice(0,7) === key) tot += byDate[iso]; }
+      monLabels.push(md.toLocaleDateString(undefined,{month:'short'})); monVals.push(tot);
+    }
+    renderBarChart($('monthChart'), monLabels, monVals, data.goals.monthly);
+
+    // history (with inline edit)
+    const hist = [...data.entries].sort((a,b)=> b.date.localeCompare(a.date) || b.ts-a.ts).slice(0,25);
+    const hc = $('historyCard');
+    if(hist.length === 0){
+      hc.innerHTML = '<div class="empty">Nothing logged yet</div>';
+    } else {
+      hc.innerHTML = hist.map(e => {
+        if(e.id === editingId){
+          return `
+            <div class="entry editing">
+              <input type="date" class="edit-date" data-id="${e.id}" value="${e.date}" max="${todayISO()}" />
+              <input type="number" class="edit-reps" data-id="${e.id}" value="${e.reps}" min="0" />
+              <div class="actions">
+                <button class="btn-icon edit-save" data-id="${e.id}" title="Save">✓</button>
+                <button class="btn-icon edit-cancel" title="Cancel">✕</button>
+              </div>
+            </div>`;
+        }
+        return `
+          <div class="entry">
+            <span class="d">${e.date}</span>
+            <span class="r">${e.reps} reps</span>
+            <div class="actions">
+              <button class="btn-icon edit-start" data-id="${e.id}" title="Edit">✎</button>
+              <button class="btn-icon danger del" data-id="${e.id}" title="Delete">✕</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      hc.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
+      hc.querySelectorAll('.edit-start').forEach(btn => btn.addEventListener('click', () => { editingId = btn.dataset.id; renderAll(); }));
+      hc.querySelectorAll('.edit-cancel').forEach(btn => btn.addEventListener('click', () => { editingId = null; renderAll(); }));
+      hc.querySelectorAll('.edit-save').forEach(btn => btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const dEl = hc.querySelector(`.edit-date[data-id="${id}"]`);
+        const rEl = hc.querySelector(`.edit-reps[data-id="${id}"]`);
+        updateEntry(id, dEl.value, parseFloat(rEl.value));
+      }));
+    }
+  }
+
+  function sumRange(byDate, key, keyFn){
+    let tot = 0;
+    for(const iso in byDate){ if(keyFn(parseISO(iso)) === key) tot += byDate[iso]; }
+    return tot;
+  }
+  function pct(v, goal){ if(!goal) return 0; return Math.min(100, Math.round((v/goal)*100)); }
+
+  // ---------- reminder ----------
+  async function requestNotifPermission(){
+    if(!('Notification' in window)) return false;
+    if(Notification.permission === 'granted') return true;
+    if(Notification.permission === 'denied') return false;
+    const p = await Notification.requestPermission();
+    return p === 'granted';
+  }
+  function checkReminder(){
+    const r = data.settings.reminder;
+    if(!r || !r.enabled) return;
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    const now = new Date();
+    const [hh, mm] = (r.time || '19:00').split(':').map(Number);
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm);
+    if(now < target) return;
+    const today = todayISO();
+    const byDate = repsByDate();
+    if((byDate[today] || 0) > 0) return;
+    if(data.lastNotified === today) return;
+    try{
+      new Notification('Drift', { body: "You haven't logged pushups yet today.", icon: 'icons/icon-192.png' });
+    }catch(e){}
+    data.lastNotified = today;
+    save();
+  }
+
+  // ---------- events ----------
+  function getSelectedDate(){
+    const v = $('entryDate').value;
+    return v || todayISO();
+  }
+  $('entryDate').addEventListener('change', () => {
+    $('backdateFlag').classList.toggle('show', $('entryDate').value !== todayISO());
+  });
+
+  $('addBtn').addEventListener('click', () => {
+    const v = parseFloat($('repsInput').value);
+    if(v > 0){ addEntry(v, getSelectedDate()); $('repsInput').value=''; }
+  });
+  $('repsInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') $('addBtn').click(); });
+  document.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', () => addEntry(parseInt(b.dataset.q,10), getSelectedDate())));
+
+  $('rangeToggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('.range-btn');
+    if(!btn) return;
+    document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRange = parseInt(btn.dataset.r,10);
+    renderAll();
+  });
+
+  $('saveGoalsBtn').addEventListener('click', () => {
+    const mVal = parseFloat($('monthGoalInput').value);
+    const yVal = parseFloat($('yearGoalInput').value);
+    if(mVal > 0) data.goals.monthly = Math.round(mVal);
+    if(yVal > 0) data.goals.yearly = Math.round(yVal);
+    $('monthGoalInput').value=''; $('yearGoalInput').value='';
+    save(); renderAll(); showToast('Goals saved');
+  });
+
+  document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => {
+    data.settings.mode = document.querySelector('input[name=mode]:checked').value;
+    $('freqInput').disabled = data.settings.mode !== 'weekly';
+    save(); renderAll();
+  }));
+  $('freqInput').addEventListener('change', () => {
+    const v = parseInt($('freqInput').value, 10);
+    if(v >= 1 && v <= 7){ data.settings.frequency = v; save(); renderAll(); }
+  });
+  $('freqInput').addEventListener('focus', () => {
+    $('modeWeekly').checked = true;
+    data.settings.mode = 'weekly';
+    $('freqInput').disabled = false;
+  });
+
+  $('exportBtn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `drift-backup-${todayISO()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showToast('JSON backup downloaded');
+  });
+
+  $('exportCsvBtn').addEventListener('click', () => {
+    const rows = ['date,reps'];
+    [...data.entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e => rows.push(`${e.date},${e.reps}`));
+    const blob = new Blob([rows.join('\n')], { type:'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `drift-export-${todayISO()}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showToast('CSV exported');
+  });
+
+  $('importFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        if(!parsed.entries) throw new Error('bad file');
+        const def = DEFAULT_DATA();
+        data = {
+          entries: parsed.entries || [],
+          goals: Object.assign(def.goals, parsed.goals || {}),
+          settings: Object.assign(def.settings, parsed.settings || {}, {
+            reminder: Object.assign(def.settings.reminder, (parsed.settings && parsed.settings.reminder) || {})
+          }),
+          lastNotified: parsed.lastNotified || null
+        };
+        save(); renderAll(); syncSettingsUI();
+        showToast('Backup restored');
+      }catch(err){ showToast('Could not read that file'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  $('reminderToggle').addEventListener('change', async () => {
+    if($('reminderToggle').checked){
+      const ok = await requestNotifPermission();
+      if(!ok){
+        showToast('Notifications blocked in browser settings');
+        $('reminderToggle').checked = false;
+        data.settings.reminder.enabled = false;
+        save();
+        return;
+      }
+    }
+    data.settings.reminder.enabled = $('reminderToggle').checked;
+    save();
+  });
+  $('reminderTime').addEventListener('change', () => {
+    data.settings.reminder.time = $('reminderTime').value;
+    save();
+  });
+
+  function syncSettingsUI(){
+    $('modeDaily').checked = data.settings.mode !== 'weekly';
+    $('modeWeekly').checked = data.settings.mode === 'weekly';
+    $('freqInput').value = data.settings.frequency || 5;
+    $('freqInput').disabled = data.settings.mode !== 'weekly';
+    $('reminderToggle').checked = !!data.settings.reminder.enabled;
+    $('reminderTime').value = data.settings.reminder.time || '19:00';
+  }
+
+  // ---------- init ----------
+  (async function init(){
+    $('entryDate').value = todayISO();
+    $('entryDate').max = todayISO();
+    await load();
+    syncSettingsUI();
+    renderAll();
+    setInterval(checkReminder, 60000);
+    setTimeout(checkReminder, 3000);
+  })();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
